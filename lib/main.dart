@@ -15,6 +15,7 @@ void main() async {
 
   try {
     await NotificationService().init();
+    await NotificationService().requestPermissions();
   } catch (_) {}
 
   runApp(const QuestBoardApp());

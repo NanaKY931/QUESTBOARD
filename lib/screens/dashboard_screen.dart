@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
@@ -15,6 +16,7 @@ import 'create_quest_screen.dart';
 import 'trophy_room_screen.dart';
 import 'quest_completion_screen.dart';
 import 'achievements_screen.dart';
+import '../services/quote_service.dart';
 
 // ══════════════════════════════════════════════════
 // DASHBOARD SCREEN
@@ -143,6 +145,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
           ),
+          const _QuoteOfTheDay(),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -993,3 +996,75 @@ class _QuestCard extends StatelessWidget {
     );
   }
 }
+
+// ══════════════════════════════════════════════════
+// QUOTE OF THE DAY
+// ══════════════════════════════════════════════════
+
+class _QuoteOfTheDay extends StatefulWidget {
+  const _QuoteOfTheDay();
+
+  @override
+  State<_QuoteOfTheDay> createState() => _QuoteOfTheDayState();
+}
+
+class _QuoteOfTheDayState extends State<_QuoteOfTheDay> {
+  Quote? _quote;
+  bool _isLoading = true;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchQuote();
+    _refreshTimer = Timer.periodic(const Duration(hours: 1), (_) {
+      _fetchQuote();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchQuote() async {
+    final quote = await QuoteService().fetchQuoteOfTheDay();
+    if (mounted) {
+      setState(() {
+        _quote = quote;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) return const SizedBox.shrink();
+    if (_quote == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.of(context).bg,
+        border: Border(top: BorderSide(color: AppColors.of(context).borderSubtle)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '"${_quote!.text}"',
+            textAlign: TextAlign.center,
+            style: AppText.body(size: 11, color: AppColors.of(context).textSecondary).copyWith(fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '- ${_quote!.author} -',
+            style: AppText.label(size: 9, color: AppColors.gold, spacing: 1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

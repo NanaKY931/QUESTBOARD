@@ -8,6 +8,7 @@ import '../models/achievement.dart';
 import '../services/notification_service.dart';
 import '../services/vibration_service.dart';
 import '../services/auth_service.dart';
+import '../services/quote_service.dart';
 
 class GameProvider extends ChangeNotifier {
   PlayerStats? _player;
@@ -17,6 +18,7 @@ class GameProvider extends ChangeNotifier {
   bool _isLoading = true;
   String? _userId;
   Timer? _deadlineTimer;
+  Timer? _quoteTimer;
   List<CameraDescription> _cameras = [];
 
   PlayerStats? get player => _player;
@@ -63,6 +65,18 @@ class GameProvider extends ChangeNotifier {
       }
     });
 
+    // Fetch and show a quote notification every 2 hours
+    _quoteTimer?.cancel();
+    _quoteTimer = Timer.periodic(const Duration(hours: 2), (_) async {
+      if (_userId != null) {
+        final quoteService = QuoteService();
+        final quote = await quoteService.fetchQuoteOfTheDay();
+        if (quote != null) {
+          await _notificationService.showQuoteNotification(quote.text, quote.author);
+        }
+      }
+    });
+
     _isLoading = false;
     notifyListeners();
   }
@@ -70,6 +84,7 @@ class GameProvider extends ChangeNotifier {
   @override
   void dispose() {
     _deadlineTimer?.cancel();
+    _quoteTimer?.cancel();
     super.dispose();
   }
 
